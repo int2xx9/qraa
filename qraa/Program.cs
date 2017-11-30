@@ -293,7 +293,6 @@ namespace int512.qraa
         public string ToJsonString()
         {
             using (var stream = new MemoryStream())
-            using (var reader = new StreamReader(stream))
             {
                 var serializer = new DataContractJsonSerializer(typeof(Result));
                 serializer.WriteObject(stream, this);
