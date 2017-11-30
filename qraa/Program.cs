@@ -45,13 +45,24 @@ namespace int512.qraa
                 return;
             }
 
+            if (opts.Command == null)
+            {
+                MessageBox.Show("No command is specified", ProgramName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            if (!Commands.ContainsKey(opts.Command))
+            {
+                MessageBox.Show("No command named '" + opts.Command + "'", ProgramName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
             // Start if server isn't up
             if (!IsServerStarted())
             {
                 StartServerAsAdmin();
             }
 
-            var result = SendCommand("net-session");
+            var result = SendCommand(opts.Command);
             if (result == null)
             {
                 MessageBox.Show("Fatal error", "Error - " + ProgramName, MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -203,6 +214,13 @@ namespace int512.qraa
     /// </summary>
     public class CommandlineOptions
     {
+        private static readonly string DefaultName = "qraa";
+
+        /// <summary>
+        /// The command to run
+        /// </summary>
+        public string Command { set; get; }
+
         /// <summary>
         /// Is /server passed
         /// </summary>
@@ -220,8 +238,20 @@ namespace int512.qraa
         /// <returns>An instance of CommandlineOptions</returns>
         public static CommandlineOptions Parse(string[] args)
         {
+            var exename = Path.GetFileNameWithoutExtension(Assembly.GetExecutingAssembly().Location);
+            string command;
+            if (exename != DefaultName)
+            {
+                command = exename;
+            }
+            else
+            {
+                command = args.Skip(1).FirstOrDefault(x => x.IndexOf("/") != 0);
+            }
+
             return new CommandlineOptions()
             {
+                Command = command,
                 Server = args.Skip(1).Any(x => x.ToLower() == "/server"),
                 Shutdown = args.Skip(1).Any(x => x.ToLower() == "/shutdown")
             };
