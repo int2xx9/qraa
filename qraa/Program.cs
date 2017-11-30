@@ -47,12 +47,12 @@ namespace int512.qraa
 
             if (opts.Command == null)
             {
-                MessageBox.Show("No command is specified", ProgramName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowMessage("No command is specified", ProgramName, MessageBoxIcon.Error);
                 return;
             }
             if (!Commands.ContainsKey(opts.Command))
             {
-                MessageBox.Show("No command named '" + opts.Command + "'", ProgramName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowMessage("No command named '" + opts.Command + "'", ProgramName, MessageBoxIcon.Error);
                 return;
             }
 
@@ -65,18 +65,18 @@ namespace int512.qraa
             var result = SendCommand(opts.Command);
             if (result == null)
             {
-                MessageBox.Show("Fatal error", "Error - " + ProgramName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowMessage("Fatal error", "Error - " + ProgramName, MessageBoxIcon.Error);
                 return;
             }
 
             var resultText = PrettyResult(result);
             if (result.IsExitSuccessfully())
             {
-                MessageBox.Show("Exit successfully\n" + resultText, ProgramName, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                ShowMessage("Exit successfully\n" + resultText, ProgramName, MessageBoxIcon.Information);
             }
             else
             {
-                MessageBox.Show(resultText, "Error - " + ProgramName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowMessage(resultText, "Error - " + ProgramName, MessageBoxIcon.Error);
             }
         }
 
@@ -143,7 +143,7 @@ namespace int512.qraa
                 var mutexAcquired = mutex.WaitOne(0, false);
                 if (!mutexAcquired)
                 {
-                    MessageBox.Show("Server is already running", ProgramName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    ShowMessage("Server is already running", ProgramName, MessageBoxIcon.Error);
                     return;
                 }
 
@@ -206,6 +206,11 @@ namespace int512.qraa
                 Stdout = proc.StandardOutput.ReadToEnd(),
                 Stderr = proc.StandardError.ReadToEnd(),
             };
+        }
+
+        private static void ShowMessage(string text, string caption, MessageBoxIcon icon)
+        {
+            MessageBox.Show(text, caption, MessageBoxButtons.OK, icon);
         }
     }
 
