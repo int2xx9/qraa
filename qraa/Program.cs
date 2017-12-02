@@ -13,11 +13,17 @@ using System.Security.Principal;
 using System.Runtime.Serialization;
 using System.Threading;
 using System.Security.Cryptography;
+using System.Runtime.InteropServices;
 
 namespace int512.qraa
 {
     static class Program
     {
+        [DllImport("Kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        private static extern uint GetFinalPathNameByHandle(IntPtr hFile, [MarshalAs(UnmanagedType.LPTStr)] StringBuilder lpszFilePath, uint cchFilePath, uint dwFlags);
+        private const uint FILE_NAME_NORMALIZED = 0x0;
+
+        private const int MaxExecutableNameLength = 1024;
         private static readonly string ProgramName = "qraa";
         private static readonly string ServerMutexNamePrefix = "qraa-server-mutex-";
         private static readonly string PipeNamePrefix = "qraa-";
@@ -28,9 +34,19 @@ namespace int512.qraa
             {"net-session", () => Run("net", "session")}
         };
 
+        private static string GetRealExecutableName()
+        {
+            using (var stream = new FileStream(Assembly.GetExecutingAssembly().Location, FileMode.Open, FileAccess.Read, FileShare.None))
+            {
+                var path = new StringBuilder(MaxExecutableNameLength);
+                var ret = GetFinalPathNameByHandle(stream.SafeFileHandle.DangerousGetHandle(), path, MaxExecutableNameLength, FILE_NAME_NORMALIZED);
+                return ret == 0 ? null : path.ToString();
+            }
+        }
+
         private static string GenerateIdentityName()
         {
-            var orgPath = Assembly.GetExecutingAssembly().Location;
+            var orgPath = GetRealExecutableName();
             var user = Environment.UserName;
 
             var sha2 = new SHA256CryptoServiceProvider();
@@ -151,7 +167,7 @@ namespace int512.qraa
 
         private static void StartServerAsAdmin()
         {
-            var psi = new ProcessStartInfo(Assembly.GetExecutingAssembly().Location, "/server")
+            var psi = new ProcessStartInfo(GetRealExecutableName(), "/server")
             {
                 CreateNoWindow = true,
                 UseShellExecute = true,
