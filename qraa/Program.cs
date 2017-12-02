@@ -12,20 +12,44 @@ using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Runtime.Serialization;
 using System.Threading;
+using System.Security.Cryptography;
 
 namespace int512.qraa
 {
     static class Program
     {
         private static readonly string ProgramName = "qraa";
-        private static readonly string ServerMutexName = "qraa-server-mutex";
-        private static readonly string PipeName = "qraa";
+        private static readonly string ServerMutexNamePrefix = "qraa-server-mutex-";
+        private static readonly string PipeNamePrefix = "qraa-";
         private static readonly int PipeTimeout = 20 * 1000; // 20secs
         
         private static readonly Dictionary<string, Func<Result>> Commands = new Dictionary<string, Func<Result>>
         {
             {"net-session", () => Run("net", "session")}
         };
+
+        private static string GenerateIdentityName()
+        {
+            var orgPath = Assembly.GetExecutingAssembly().Location;
+            var user = Environment.UserName;
+
+            var sha2 = new SHA256CryptoServiceProvider();
+            var plain = Encoding.UTF8.GetBytes(user + "\0" + orgPath);
+            var hash = sha2.ComputeHash(plain);
+
+            var str = string.Join("", hash.Select(x => x.ToString("X2")));
+            return str;
+        }
+
+        private static string GetServerMutexName()
+        {
+            return ServerMutexNamePrefix + GenerateIdentityName();
+        }
+
+        private static string GetPipeName()
+        {
+            return PipeNamePrefix + GenerateIdentityName();
+        }
 
         [STAThread]
         static void Main()
@@ -97,7 +121,7 @@ namespace int512.qraa
 
         private static Result SendCommand(string cmd)
         {
-            using (var pipe = new NamedPipeClientStream(".", PipeName, PipeDirection.InOut))
+            using (var pipe = new NamedPipeClientStream(".", GetPipeName(), PipeDirection.InOut))
             {
                 pipe.Connect(PipeTimeout);
                 
@@ -117,7 +141,7 @@ namespace int512.qraa
         private static bool IsServerStarted()
         {
             Mutex mutex;
-            var ret = Mutex.TryOpenExisting(ServerMutexName, out mutex);
+            var ret = Mutex.TryOpenExisting(GetServerMutexName(), out mutex);
             if (mutex != null)
             {
                 mutex.Dispose();
@@ -138,7 +162,7 @@ namespace int512.qraa
 
         private static void StartServer()
         {
-            using (var mutex = new Mutex(false, ServerMutexName))
+            using (var mutex = new Mutex(false, GetServerMutexName()))
             {
                 var mutexAcquired = mutex.WaitOne(0, false);
                 if (!mutexAcquired)
@@ -157,7 +181,7 @@ namespace int512.qraa
             var ps = new PipeSecurity();
             var authorizedUser = new SecurityIdentifier(WellKnownSidType.AuthenticatedUserSid, null);
             ps.SetAccessRule(new PipeAccessRule(authorizedUser, PipeAccessRights.ReadWrite, AccessControlType.Allow));
-            using (var pipe = new NamedPipeServerStream(PipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Message, PipeOptions.WriteThrough, 1024 * 100, 1024 * 100, ps))
+            using (var pipe = new NamedPipeServerStream(GetPipeName(), PipeDirection.InOut, 1, PipeTransmissionMode.Message, PipeOptions.WriteThrough, 1024 * 100, 1024 * 100, ps))
             {
                 pipe.WaitForConnection();
                 string cmd;
