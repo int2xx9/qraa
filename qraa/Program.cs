@@ -73,14 +73,21 @@ namespace int512.qraa
             var opts = CommandlineOptions.Parse(Environment.GetCommandLineArgs());
             if (opts.Shutdown)
             {
-                if (IsServerStarted())
+                if (!IsServerStarted())
                 {
-                    SendCommand("shutdown");
+                    ShowMessage("Server is not running.", ProgramName, MessageBoxIcon.Information);
+                    return;
                 }
+                SendCommand("shutdown");
                 return;
             }
             if (opts.Server)
             {
+                if (IsServerStarted())
+                {
+                    ShowMessage("Server is already running.", ProgramName, MessageBoxIcon.Information);
+                    return;
+                }
                 StartServer();
                 return;
             }
