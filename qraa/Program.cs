@@ -50,12 +50,11 @@ namespace int512.qraa
             var orgPath = GetRealExecutableName();
             var user = Environment.UserName;
 
+            var plainIdentity = Encoding.UTF8.GetBytes(user + "\0" + orgPath);
             var sha2 = new SHA256CryptoServiceProvider();
-            var plain = Encoding.UTF8.GetBytes(user + "\0" + orgPath);
-            var hash = sha2.ComputeHash(plain);
+            var hashedIdentity = sha2.ComputeHash(plainIdentity);
 
-            var str = string.Join("", hash.Select(x => x.ToString("X2")));
-            return str;
+            return string.Join("", hashedIdentity.Select(x => x.ToString("X2")));
         }
 
         private static string GetServerMutexName()
