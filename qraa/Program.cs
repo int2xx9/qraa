@@ -28,7 +28,7 @@ namespace int512.qraa
         private static readonly string ServerMutexNamePrefix = "qraa-server-mutex-";
         private static readonly string PipeNamePrefix = "qraa-";
         private static readonly string ShutdownCommandName = "shutdown";
-        private static readonly int PipeTimeout = 20 * 1000; // 20secs
+        private const int PipeTimeout = 20 * 1000; // 20secs
         
         private static readonly Dictionary<string, Func<Result>> Commands = new Dictionary<string, Func<Result>>
         {
