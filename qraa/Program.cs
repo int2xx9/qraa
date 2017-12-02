@@ -27,6 +27,7 @@ namespace int512.qraa
         private static readonly string ProgramName = "qraa";
         private static readonly string ServerMutexNamePrefix = "qraa-server-mutex-";
         private static readonly string PipeNamePrefix = "qraa-";
+        private static readonly string ShutdownCommandName = "shutdown";
         private static readonly int PipeTimeout = 20 * 1000; // 20secs
         
         private static readonly Dictionary<string, Func<Result>> Commands = new Dictionary<string, Func<Result>>
@@ -78,7 +79,7 @@ namespace int512.qraa
                     ShowMessage("Server is not running.", ProgramName, MessageBoxIcon.Information);
                     return;
                 }
-                SendCommand("shutdown");
+                SendCommand(ShutdownCommandName);
                 return;
             }
             if (opts.Server)
@@ -212,7 +213,7 @@ namespace int512.qraa
                 {
                     cmd = reader.ReadLine();
                 }
-                if (cmd == "shutdown") return false;
+                if (cmd == ShutdownCommandName) return false;
                 if (!Commands.ContainsKey(cmd)) return true;
 
                 var result = Commands[cmd]();
